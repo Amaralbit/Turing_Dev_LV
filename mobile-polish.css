@@ -1,0 +1,2 @@
+/* Ajustes de leitura e respiro para telas estreitas. */
+@media(max-width:600px){.hero-copy{width:100%;max-width:100%}.hero h1{width:100%;max-width:100%;font-size:clamp(38px,12vw,47px);letter-spacing:-.07em;overflow-wrap:break-word}.hero-text{max-width:100%}.hero-art{overflow:hidden}.team-heading h2{font-size:clamp(44px,13vw,52px)}.partner-copy h2{font-size:clamp(37px,11vw,41px)}}
