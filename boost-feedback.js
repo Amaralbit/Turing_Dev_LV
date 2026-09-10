@@ -60,14 +60,25 @@ const renderSuggestions = () => {
     const meta = document.createElement('div'); meta.className = 'suggestion-meta';
     const author = document.createElement('span'); author.textContent = `${suggestion.name} · ${formatTime(suggestion.createdAt)}`;
     const state = document.createElement('strong'); state.className = 'is-viewed'; state.textContent = 'Enviada';
-    meta.append(author, state); card.append(title, message, meta); suggestionList.append(card);
+    meta.append(author, state);
+    card.append(title, message);
+    if (suggestion.discord) {
+      const discordNote = document.createElement('p'); discordNote.className = 'suggestion-discord'; discordNote.textContent = `Discord informado: ${suggestion.discord}`;
+      card.append(discordNote);
+    }
+    card.append(meta); suggestionList.append(card);
   });
 };
 
 feedbackForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const data = new FormData(feedbackForm);
-  const suggestion = { name: data.get('name').trim(), title: data.get('title').trim(), message: data.get('message').trim() };
+  const suggestion = {
+    name: data.get('name').trim(),
+    discord: data.get('discord').trim(),
+    title: data.get('title').trim(),
+    message: data.get('message').trim(),
+  };
   if (!suggestion.name || !suggestion.title || !suggestion.message) return;
 
   const submitButton = feedbackForm.querySelector('.feedback-submit');

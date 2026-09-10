@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Painel privado de sugestões do Amaral Boost." /><title>Painel de sugestões — Amaral Boost</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="effects.css" /><link rel="stylesheet" href="products.css" /><link rel="stylesheet" href="boost-admin.css" /><link rel="icon" href="images/logo_turing.png" type="image/png" />
+  </head>
+  <body class="boost-page">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Turing Dev LV - início"><svg class="brand-mark" viewBox="0 0 70 62" aria-hidden="true"><path d="M7 7h56v14H42v34H28V21H7z" fill="currentColor" /></svg><span>TURING <i>DEV LV</i></span></a>
+    </header>
+    <main>
+      <section class="admin-hero section"><a class="back-link" href="amaral-boost.html">← Amaral Boost</a><h1>Painel de sugestões</h1><p>Acesso restrito ao administrador. Faça login para ver as sugestões enviadas.</p></section>
+      <section class="admin-login section" data-admin-login><form data-admin-login-form class="admin-login-form"><label>E-mail<input name="email" type="email" autocomplete="username" required /></label><label>Senha<input name="password" type="password" autocomplete="current-password" required /></label><button class="feedback-submit" type="submit">Entrar <span>→</span></button><p class="form-status" data-admin-login-status aria-live="polite"></p></form></section>
+      <section class="admin-panel section" data-admin-panel hidden><div class="admin-panel-heading"><h2>Sugestões recebidas <span data-admin-count>0</span></h2><button class="admin-logout" type="button" data-admin-logout>Sair</button></div><div class="suggestion-list" data-admin-suggestions></div></section>
+    </main>
+    <footer><a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 70 62" aria-hidden="true"><path d="M7 7h56v14H42v34H28V21H7z" fill="currentColor" /></svg><span>TURING <i>DEV LV</i></span></a><p>Produtos digitais feitos com intenção.</p><p>© <span id="year"></span> TURING DEV LV</p></footer>
+    <script src="script.js"></script><script type="module" src="boost-admin.js"></script>
+  </body>
+</html>
