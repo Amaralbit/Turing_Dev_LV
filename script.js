@@ -58,7 +58,7 @@ if (hero && heroArt && field && !reduceMotion.matches) {
       stemX: width * 0.57,
       stemWidth: width * 0.14,
       stemTop: height * 0.17 + barHeight * 0.36,
-      stemHeight: height * 0.09,
+      stemHeight: height * 0.45,
     };
   };
 
