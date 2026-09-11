@@ -41,21 +41,32 @@ if (hero && heroArt && field && !reduceMotion.matches) {
     particles.length = 0;
     for (let index = 0; index < amount; index += 1) {
       const seed = index + 1;
-      particles.push({ seed, x: width / 2, y: height / 2, vx: 0, vy: 0, size: 1 + random(seed * 3) * 2.6 });
+      particles.push({ seed, x: width / 2, y: height / 2, vx: 0, vy: 0, size: 1.35 + random(seed * 3) * 3.6 });
     }
   };
 
+  const markShape = () => {
+    const barHeight = height * 0.12;
+    return {
+      left: width * 0.14,
+      right: width * 0.86,
+      top: height * 0.17,
+      barHeight,
+      stemX: width * 0.57,
+      stemWidth: width * 0.14,
+      stemTop: height * 0.17 + barHeight * 0.36,
+      stemHeight: height * 0.09,
+    };
+  };
+
   const markTarget = (particle, index) => {
-    const row = index < particles.length * 0.38;
-    const offset = row ? index / Math.max(1, particles.length * 0.38 - 1) : (index - particles.length * 0.38) / Math.max(1, particles.length * 0.62 - 1);
-    const left = width * 0.16;
-    const right = width * 0.83;
-    const top = height * 0.17;
-    const stemX = width * 0.57;
-    const jitter = (random(particle.seed * 7) - 0.5) * 18;
+    const shape = markShape();
+    const rowCount = particles.length * 0.52;
+    const row = index < rowCount;
+    const offset = row ? index / Math.max(1, rowCount - 1) : (index - rowCount) / Math.max(1, particles.length - rowCount - 1);
     return row
-      ? { x: left + (right - left) * offset, y: top + jitter }
-      : { x: stemX + jitter, y: top + 10 + height * 0.58 * offset };
+      ? { x: shape.left + (shape.right - shape.left) * offset, y: shape.top + (random(particle.seed * 7) - 0.5) * shape.barHeight }
+      : { x: shape.stemX + (random(particle.seed * 7) - 0.5) * shape.stemWidth, y: shape.stemTop + shape.stemHeight * offset };
   };
 
   const expandedTarget = (particle) => {
@@ -73,9 +84,39 @@ if (hero && heroArt && field && !reduceMotion.matches) {
     hero.classList.toggle('is-unfolding', progress > 0.16);
   };
 
+  const drawMarkOutline = (open) => {
+    if (open > 0.86) return;
+    const shape = markShape();
+    const fade = 1 - open;
+    const barTop = shape.top - shape.barHeight / 2;
+    const barBottom = shape.top + shape.barHeight / 2;
+    const stemLeft = shape.stemX - shape.stemWidth / 2;
+    const stemRight = shape.stemX + shape.stemWidth / 2;
+
+    context.save();
+    context.beginPath();
+    context.moveTo(shape.left, barTop);
+    context.lineTo(shape.right, barTop);
+    context.lineTo(shape.right, barBottom);
+    context.lineTo(stemRight, barBottom);
+    context.lineTo(stemRight, shape.stemTop + shape.stemHeight);
+    context.lineTo(stemLeft, shape.stemTop + shape.stemHeight);
+    context.lineTo(stemLeft, barBottom);
+    context.lineTo(shape.left, barBottom);
+    context.closePath();
+    context.fillStyle = `rgba(32, 204, 230, ${0.11 * fade})`;
+    context.strokeStyle = `rgba(5, 12, 53, ${0.76 * fade})`;
+    context.lineWidth = 3;
+    context.lineJoin = 'round';
+    context.fill();
+    context.stroke();
+    context.restore();
+  };
+
   const draw = () => {
     context.clearRect(0, 0, width, height);
     const open = Math.min(1, Math.max(0, (progress - 0.08) / 0.7));
+    drawMarkOutline(open);
 
     particles.forEach((particle, index) => {
       const mark = markTarget(particle, index);
