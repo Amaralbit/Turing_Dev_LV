@@ -17,6 +17,7 @@ if (hero && heroArt && field && !reduceMotion.matches) {
   const context = field.getContext('2d');
   const pointer = { x: -9999, y: -9999 };
   const particles = [];
+  const sparks = [];
   let width = 0;
   let height = 0;
   let progress = 0;
@@ -45,6 +46,14 @@ if (hero && heroArt && field && !reduceMotion.matches) {
       const seed = index + 1;
       const outline = index < outlineCount;
       particles.push({ seed, outline, x: width / 2, y: height / 2, vx: 0, vy: 0, size: outline ? 1.75 + random(seed * 3) * 3.3 : 1.2 + random(seed * 3) * 3.25 });
+    }
+
+    const sparkAmount = window.matchMedia('(max-width: 800px)').matches ? 18 : 42;
+    sparks.length = 0;
+    for (let index = 0; index < sparkAmount; index += 1) {
+      const spark = { seed: index + 1, cycle: 0 };
+      resetSpark(spark, index * 4);
+      sparks.push(spark);
     }
   };
 
@@ -116,6 +125,74 @@ if (hero && heroArt && field && !reduceMotion.matches) {
     hero.classList.toggle('is-unfolding', progress > 0.16);
   };
 
+  const resetSpark = (spark, delay = 0) => {
+    spark.cycle += 1;
+    const variation = spark.seed * spark.cycle;
+    const source = outlineTarget(Math.floor(random(variation * 19) * outlineCount));
+    const angle = Math.atan2(source.y - height * 0.4, source.x - width * 0.5) + (random(variation * 23) - 0.5) * 1.25;
+    const speed = 0.72 + random(variation * 29) * 1.35;
+    spark.x = source.x;
+    spark.y = source.y;
+    spark.vx = Math.cos(angle) * speed;
+    spark.vy = Math.sin(angle) * speed;
+    spark.life = 34 + Math.round(random(variation * 31) * 54);
+    spark.age = -delay;
+    spark.size = 1.1 + random(variation * 37) * 1.7;
+  };
+
+  const drawSparks = (open) => {
+    if (open > 0.9) return;
+    context.save();
+    context.globalCompositeOperation = 'screen';
+
+    sparks.forEach((spark) => {
+      spark.age += 1;
+      if (spark.age < 0) return;
+      if (spark.age > spark.life) {
+        resetSpark(spark, Math.round(random(spark.seed * spark.cycle * 41) * 22));
+        return;
+      }
+
+      spark.x += spark.vx;
+      spark.y += spark.vy;
+      spark.vx *= 0.988;
+      spark.vy *= 0.988;
+      const phase = spark.age / spark.life;
+      const alpha = Math.sin(phase * Math.PI) * (1 - open) * 0.85;
+
+      context.beginPath();
+      context.arc(spark.x, spark.y, spark.size * 3.4, 0, Math.PI * 2);
+      context.fillStyle = `rgba(32, 204, 230, ${alpha * 0.09})`;
+      context.fill();
+
+      context.beginPath();
+      context.moveTo(spark.x - spark.vx * 20, spark.y - spark.vy * 20);
+      context.lineTo(spark.x, spark.y);
+      context.strokeStyle = `rgba(32, 204, 230, ${alpha * 0.88})`;
+      context.lineWidth = 0.9;
+      context.stroke();
+
+      if (spark.size > 1.8) {
+        context.beginPath();
+        context.moveTo(spark.x - spark.size * 2.2, spark.y);
+        context.lineTo(spark.x + spark.size * 2.2, spark.y);
+        context.moveTo(spark.x, spark.y - spark.size * 2.2);
+        context.lineTo(spark.x, spark.y + spark.size * 2.2);
+        context.strokeStyle = `rgba(226, 253, 255, ${alpha * 0.7})`;
+        context.lineWidth = 0.5;
+        context.stroke();
+      }
+
+      context.beginPath();
+      context.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
+      context.shadowBlur = 13;
+      context.shadowColor = 'rgba(32, 204, 230, .9)';
+      context.fillStyle = `rgba(226, 253, 255, ${alpha})`;
+      context.fill();
+    });
+    context.restore();
+  };
+
   const draw = () => {
     context.clearRect(0, 0, width, height);
     const open = Math.min(1, Math.max(0, (progress - 0.08) / 0.7));
@@ -144,6 +221,8 @@ if (hero && heroArt && field && !reduceMotion.matches) {
       context.fillStyle = particle.outline ? `rgba(5, 12, 53, ${alpha})` : `rgba(14, 185, 213, ${alpha})`;
       context.fill();
     });
+
+    drawSparks(open);
 
     if (open < 0.8 && particles.length - outlineCount > 2) {
       context.lineWidth = 0.65;
