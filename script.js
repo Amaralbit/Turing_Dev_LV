@@ -22,6 +22,7 @@ if (hero && heroArt && field && !reduceMotion.matches) {
   let progress = 0;
   let frame;
   let rendering = false;
+  let outlineCount = 0;
 
   const random = (seed) => {
     const value = Math.sin(seed * 999.91) * 43758.5453;
@@ -37,11 +38,13 @@ if (hero && heroArt && field && !reduceMotion.matches) {
     field.height = Math.round(height * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
 
-    const amount = window.matchMedia('(max-width: 800px)').matches ? 54 : 132;
+    const amount = window.matchMedia('(max-width: 800px)').matches ? 82 : 184;
+    outlineCount = Math.round(amount * 0.54);
     particles.length = 0;
     for (let index = 0; index < amount; index += 1) {
       const seed = index + 1;
-      particles.push({ seed, x: width / 2, y: height / 2, vx: 0, vy: 0, size: 1.35 + random(seed * 3) * 3.6 });
+      const outline = index < outlineCount;
+      particles.push({ seed, outline, x: width / 2, y: height / 2, vx: 0, vy: 0, size: outline ? 1.75 + random(seed * 3) * 3.3 : 1.2 + random(seed * 3) * 3.25 });
     }
   };
 
@@ -59,11 +62,40 @@ if (hero && heroArt && field && !reduceMotion.matches) {
     };
   };
 
-  const markTarget = (particle, index) => {
+  const outlineTarget = (index) => {
     const shape = markShape();
-    const rowCount = particles.length * 0.52;
-    const row = index < rowCount;
-    const offset = row ? index / Math.max(1, rowCount - 1) : (index - rowCount) / Math.max(1, particles.length - rowCount - 1);
+    const barTop = shape.top - shape.barHeight / 2;
+    const barBottom = shape.top + shape.barHeight / 2;
+    const stemLeft = shape.stemX - shape.stemWidth / 2;
+    const stemRight = shape.stemX + shape.stemWidth / 2;
+    const stemBottom = shape.stemTop + shape.stemHeight;
+    const corners = [[shape.left, barTop], [shape.right, barTop], [shape.right, barBottom], [stemRight, barBottom], [stemRight, stemBottom], [stemLeft, stemBottom], [stemLeft, barBottom], [shape.left, barBottom], [shape.left, barTop]];
+    const lengths = corners.slice(1).map((point, pointIndex) => Math.hypot(point[0] - corners[pointIndex][0], point[1] - corners[pointIndex][1]));
+    const target = (index / Math.max(1, outlineCount - 1)) * lengths.reduce((sum, length) => sum + length, 0);
+    let travelled = 0;
+
+    for (let pointIndex = 0; pointIndex < lengths.length; pointIndex += 1) {
+      const length = lengths[pointIndex];
+      if (target <= travelled + length || pointIndex === lengths.length - 1) {
+        const amount = (target - travelled) / length;
+        return {
+          x: corners[pointIndex][0] + (corners[pointIndex + 1][0] - corners[pointIndex][0]) * amount,
+          y: corners[pointIndex][1] + (corners[pointIndex + 1][1] - corners[pointIndex][1]) * amount,
+        };
+      }
+      travelled += length;
+    }
+    return { x: shape.left, y: barTop };
+  };
+
+  const markTarget = (particle, index) => {
+    if (particle.outline) return outlineTarget(index);
+    const shape = markShape();
+    const fillIndex = index - outlineCount;
+    const fillCount = particles.length - outlineCount;
+    const rowCount = fillCount * 0.6;
+    const row = fillIndex < rowCount;
+    const offset = row ? fillIndex / Math.max(1, rowCount - 1) : (fillIndex - rowCount) / Math.max(1, fillCount - rowCount - 1);
     return row
       ? { x: shape.left + (shape.right - shape.left) * offset, y: shape.top + (random(particle.seed * 7) - 0.5) * shape.barHeight }
       : { x: shape.stemX + (random(particle.seed * 7) - 0.5) * shape.stemWidth, y: shape.stemTop + shape.stemHeight * offset };
@@ -84,39 +116,9 @@ if (hero && heroArt && field && !reduceMotion.matches) {
     hero.classList.toggle('is-unfolding', progress > 0.16);
   };
 
-  const drawMarkOutline = (open) => {
-    if (open > 0.86) return;
-    const shape = markShape();
-    const fade = 1 - open;
-    const barTop = shape.top - shape.barHeight / 2;
-    const barBottom = shape.top + shape.barHeight / 2;
-    const stemLeft = shape.stemX - shape.stemWidth / 2;
-    const stemRight = shape.stemX + shape.stemWidth / 2;
-
-    context.save();
-    context.beginPath();
-    context.moveTo(shape.left, barTop);
-    context.lineTo(shape.right, barTop);
-    context.lineTo(shape.right, barBottom);
-    context.lineTo(stemRight, barBottom);
-    context.lineTo(stemRight, shape.stemTop + shape.stemHeight);
-    context.lineTo(stemLeft, shape.stemTop + shape.stemHeight);
-    context.lineTo(stemLeft, barBottom);
-    context.lineTo(shape.left, barBottom);
-    context.closePath();
-    context.fillStyle = `rgba(32, 204, 230, ${0.11 * fade})`;
-    context.strokeStyle = `rgba(5, 12, 53, ${0.76 * fade})`;
-    context.lineWidth = 3;
-    context.lineJoin = 'round';
-    context.fill();
-    context.stroke();
-    context.restore();
-  };
-
   const draw = () => {
     context.clearRect(0, 0, width, height);
     const open = Math.min(1, Math.max(0, (progress - 0.08) / 0.7));
-    drawMarkOutline(open);
 
     particles.forEach((particle, index) => {
       const mark = markTarget(particle, index);
@@ -136,16 +138,16 @@ if (hero && heroArt && field && !reduceMotion.matches) {
       particle.x += particle.vx;
       particle.y += particle.vy;
 
-      const alpha = 0.2 + random(particle.seed * 17) * 0.58;
+      const alpha = particle.outline ? 0.54 + random(particle.seed * 17) * 0.28 : 0.2 + random(particle.seed * 17) * 0.58;
       context.beginPath();
       context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      context.fillStyle = `rgba(14, 185, 213, ${alpha})`;
+      context.fillStyle = particle.outline ? `rgba(5, 12, 53, ${alpha})` : `rgba(14, 185, 213, ${alpha})`;
       context.fill();
     });
 
-    if (open < 0.8 && particles.length > 2) {
+    if (open < 0.8 && particles.length - outlineCount > 2) {
       context.lineWidth = 0.65;
-      for (let index = 0; index < particles.length - 1; index += 5) {
+      for (let index = outlineCount; index < particles.length - 1; index += 5) {
         const start = particles[index];
         const end = particles[index + 1];
         context.beginPath();
