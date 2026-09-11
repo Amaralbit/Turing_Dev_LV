@@ -7,6 +7,144 @@ window.addEventListener('pointermove', (event) => {
   cursorGlow.style.transform = `translate(${event.clientX}px, ${event.clientY}px) translate(-50%, -50%)`;
 });
 
+// O monograma Turing reage ao cursor e se abre em partículas na primeira rolagem.
+const hero = document.querySelector('.hero');
+const heroArt = document.querySelector('.hero-art');
+const field = document.querySelector('.turing-field');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+if (hero && heroArt && field && !reduceMotion.matches) {
+  const context = field.getContext('2d');
+  const pointer = { x: -9999, y: -9999 };
+  const particles = [];
+  let width = 0;
+  let height = 0;
+  let progress = 0;
+  let frame;
+  let rendering = false;
+
+  const random = (seed) => {
+    const value = Math.sin(seed * 999.91) * 43758.5453;
+    return value - Math.floor(value);
+  };
+
+  const resizeField = () => {
+    const rect = field.getBoundingClientRect();
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    width = Math.max(1, rect.width);
+    height = Math.max(1, rect.height);
+    field.width = Math.round(width * ratio);
+    field.height = Math.round(height * ratio);
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    const amount = window.matchMedia('(max-width: 800px)').matches ? 54 : 132;
+    particles.length = 0;
+    for (let index = 0; index < amount; index += 1) {
+      const seed = index + 1;
+      particles.push({ seed, x: width / 2, y: height / 2, vx: 0, vy: 0, size: 1 + random(seed * 3) * 2.6 });
+    }
+  };
+
+  const markTarget = (particle, index) => {
+    const row = index < particles.length * 0.38;
+    const offset = row ? index / Math.max(1, particles.length * 0.38 - 1) : (index - particles.length * 0.38) / Math.max(1, particles.length * 0.62 - 1);
+    const left = width * 0.16;
+    const right = width * 0.83;
+    const top = height * 0.17;
+    const stemX = width * 0.57;
+    const jitter = (random(particle.seed * 7) - 0.5) * 18;
+    return row
+      ? { x: left + (right - left) * offset, y: top + jitter }
+      : { x: stemX + jitter, y: top + 10 + height * 0.58 * offset };
+  };
+
+  const expandedTarget = (particle) => {
+    const angle = random(particle.seed * 11) * Math.PI * 2;
+    const radius = 0.23 + random(particle.seed * 13) * 0.56;
+    return {
+      x: width * 0.5 + Math.cos(angle) * width * radius,
+      y: height * 0.48 + Math.sin(angle) * height * radius * 0.74,
+    };
+  };
+
+  const setProgress = () => {
+    const range = Math.max(hero.offsetHeight * 0.9, 1);
+    progress = Math.max(0, Math.min(1, (window.scrollY - hero.offsetTop + 35) / range));
+    hero.classList.toggle('is-unfolding', progress > 0.16);
+  };
+
+  const draw = () => {
+    context.clearRect(0, 0, width, height);
+    const open = Math.min(1, Math.max(0, (progress - 0.08) / 0.7));
+
+    particles.forEach((particle, index) => {
+      const mark = markTarget(particle, index);
+      const expanded = expandedTarget(particle);
+      const targetX = mark.x + (expanded.x - mark.x) * open;
+      const targetY = mark.y + (expanded.y - mark.y) * open;
+      const dx = particle.x - pointer.x;
+      const dy = particle.y - pointer.y;
+      const distance = Math.hypot(dx, dy) || 1;
+      const influence = Math.max(0, 1 - distance / 145);
+      const repel = influence * influence * 2.9;
+
+      particle.vx += (targetX - particle.x) * 0.022 + (dx / distance) * repel;
+      particle.vy += (targetY - particle.y) * 0.022 + (dy / distance) * repel;
+      particle.vx *= 0.84;
+      particle.vy *= 0.84;
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+
+      const alpha = 0.2 + random(particle.seed * 17) * 0.58;
+      context.beginPath();
+      context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      context.fillStyle = `rgba(14, 185, 213, ${alpha})`;
+      context.fill();
+    });
+
+    if (open < 0.8 && particles.length > 2) {
+      context.lineWidth = 0.65;
+      for (let index = 0; index < particles.length - 1; index += 5) {
+        const start = particles[index];
+        const end = particles[index + 1];
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        context.lineTo(end.x, end.y);
+        context.strokeStyle = `rgba(32, 204, 230, ${(1 - open) * 0.19})`;
+        context.stroke();
+      }
+    }
+    if (rendering) frame = window.requestAnimationFrame(draw);
+  };
+
+  const startRendering = () => {
+    if (rendering) return;
+    rendering = true;
+    draw();
+  };
+
+  const stopRendering = () => {
+    rendering = false;
+    window.cancelAnimationFrame(frame);
+  };
+
+  heroArt.addEventListener('pointermove', (event) => {
+    const rect = field.getBoundingClientRect();
+    pointer.x = event.clientX - rect.left;
+    pointer.y = event.clientY - rect.top;
+  });
+  heroArt.addEventListener('pointerleave', () => { pointer.x = -9999; pointer.y = -9999; });
+  window.addEventListener('scroll', setProgress, { passive: true });
+  window.addEventListener('resize', resizeField, { passive: true });
+  resizeField();
+  setProgress();
+  new IntersectionObserver((entries) => {
+    if (entries[0]?.isIntersecting) startRendering();
+    else stopRendering();
+  }, { rootMargin: '250px 0px' }).observe(hero);
+  window.addEventListener('pagehide', stopRendering, { once: true });
+}
+
 const header = document.querySelector('.site-header');
 window.addEventListener('scroll', () => {
   header?.classList.toggle('scrolled', window.scrollY > 28);
