@@ -204,9 +204,29 @@ document.querySelectorAll('.reveal').forEach((element, index) => {
 });
 
 const menuButton = document.querySelector('.menu-button');
+const mainNavigation = document.getElementById('mobile-menu');
+
+const setMobileMenu = (open) => {
+  menuButton?.setAttribute('aria-expanded', String(open));
+  menuButton?.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+  header?.classList.toggle('menu-open', open);
+  document.body.classList.toggle('menu-open', open);
+};
+
 menuButton?.addEventListener('click', () => {
-  const open = menuButton.getAttribute('aria-expanded') === 'true';
-  menuButton.setAttribute('aria-expanded', String(!open));
+  setMobileMenu(menuButton.getAttribute('aria-expanded') !== 'true');
+});
+
+mainNavigation?.querySelectorAll('a').forEach((link) => {
+  link.addEventListener('click', () => setMobileMenu(false));
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') setMobileMenu(false);
+});
+
+window.matchMedia('(min-width: 801px)').addEventListener('change', (event) => {
+  if (event.matches) setMobileMenu(false);
 });
 
 const megaCarousel = document.querySelector('[data-mega-carousel]');
