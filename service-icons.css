@@ -1,0 +1,10 @@
+.service-icon{width:40px;height:40px;color:var(--cyan);padding-top:1px}
+.service-icon svg{display:block;width:40px;height:40px;overflow:visible;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.service-icon .icon-accent{stroke:#fff;stroke-width:2.2}
+.service-icon-site .icon-accent{stroke:var(--cyan)}
+
+@media(max-width:800px){
+  .service{grid-template-columns:27px 40px 1fr 18px}
+  .service-icon{width:34px;height:34px;padding-top:0}
+  .service-icon svg{width:34px;height:34px}
+}
